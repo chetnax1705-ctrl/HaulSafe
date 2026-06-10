@@ -1,0 +1,124 @@
+{% extends "layout.html" %}
+
+{% block title %}Trip Details - HaulSafe{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">{{ trip['origin'] }} → {{ trip['destination'] }}</h2>
+    <a href="/manager" class="btn btn-outline-dark">← Back</a>
+</div>
+
+<!-- Trip Summary -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <h4 class="fw-bold">{{ distance_km }} km</h4>
+                <p class="text-muted mb-0">Total Distance</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <h4 class="fw-bold">{{ (duration_minutes // 60) }}h {{ (duration_minutes % 60) }}m</h4>
+                <p class="text-muted mb-0">Drive Time</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <h4 class="fw-bold">{{ trip['cargo_type'] }}</h4>
+                <p class="text-muted mb-0">Cargo Type</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <h4 class="fw-bold text-success">Compliant</h4>
+                <p class="text-muted mb-0">MV Act Status</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Map -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body p-0">
+        <div id="map" style="height: 400px; border-radius: 8px;"></div>
+    </div>
+</div>
+
+<!-- Fatigue Compliance Schedule -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="fw-bold mb-3">🕐 Compliance Schedule</h5>
+        <p class="text-muted small">Generated per Motor Vehicles Act 1988 & Motor Transport Workers Act 1961</p>
+        <div class="timeline">
+            {% for event in schedule %}
+            <div class="d-flex align-items-start mb-3">
+                <div class="me-3 text-center" style="min-width: 80px;">
+                    <small class="text-muted">{{ event['start'] }}</small>
+                </div>
+                <div class="me-3">
+                    {% if event['type'] == 'drive' %}
+                        <span class="badge bg-dark">🚛 Drive</span>
+                    {% elif event['type'] == 'break' %}
+                        <span class="badge bg-warning text-dark">⏸ Break</span>
+                    {% elif event['type'] == 'sleep' %}
+                        <span class="badge bg-primary">😴 Rest</span>
+                    {% elif event['type'] == 'arrival' %}
+                        <span class="badge bg-success">✅ Arrival</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <p class="mb-0">{{ event['label'] }}</p>
+                    {% if event['duration_minutes'] > 0 %}
+                        <small class="text-muted">{{ event['duration_minutes'] }} minutes</small>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Decode ORS polyline geometry
+    function decodePolyline(encoded) {
+        let points = [];
+        let index = 0, lat = 0, lng = 0;
+        while (index < encoded.length) {
+            let shift = 0, result = 0, b;
+            do { b = encoded.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+            lat += (result & 1) ? ~(result >> 1) : (result >> 1);
+            shift = result = 0;
+            do { b = encoded.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+            lng += (result & 1) ? ~(result >> 1) : (result >> 1);
+            points.push([lat / 1e5, lng / 1e5]);
+        }
+        return points;
+    }
+
+    const geometry = {{ geometry | tojson }};
+    const originCoords = {{ origin_coords }};
+    const destCoords = {{ dest_coords }};
+
+    const map = L.map('map');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    const points = decodePolyline(geometry);
+    const polyline = L.polyline(points, {color: '#212529', weight: 4}).addTo(map);
+    map.fitBounds(polyline.getBounds());
+
+    // Markers
+    L.marker([originCoords[1], originCoords[0]]).addTo(map)
+        .bindPopup("{{ trip['origin'] }}").openPopup();
+    L.marker([destCoords[1], destCoords[0]]).addTo(map)
+        .bindPopup("{{ trip['destination'] }}");
+</script>
+{% endblock %}

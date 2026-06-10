@@ -32,7 +32,7 @@ def init_db():
             cargo_type TEXT NOT NULL,
             cargo_fragile INTEGER DEFAULT 0,
             cargo_temp_sensitive INTEGER DEFAULT 0,
-            status TEXT DEFAULT 'planned',
+            status TEXT DEFAULT 'Planned',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (manager_id) REFERENCES users(id),
             FOREIGN KEY (driver_id) REFERENCES users(id)

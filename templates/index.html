@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+
+{% block title %}HaulSafe - Safe Logistics for India{% endblock %}
+
+{% block content %}
+<div class="row align-items-center min-vh-75">
+    <div class="col-md-6">
+        <h1 class="display-4 fw-bold">Logistics Compliance<br>Built for India</h1>
+        <p class="lead mt-3">Indian law mandates 8-hour driving limits for truck drivers. Nobody tracks them. We do.</p>
+        <p class="text-muted">HaulSafe plans compliant routes, enforces statutory rest stops, and gives logistics managers real-time visibility over their fleet.</p>
+        <div class="mt-4">
+            <a href="/register" class="btn btn-dark btn-lg me-2">Get Started</a>
+            <a href="/login" class="btn btn-outline-dark btn-lg">Login</a>
+        </div>
+    </div>
+    <div class="col-md-6 text-center">
+        <div class="p-5 bg-light rounded-4">
+            <h3 class="fw-bold">11.9 hours</h3>
+            <p class="text-muted">Average daily driving by Indian truck drivers</p>
+            <h3 class="fw-bold text-danger">8 hours</h3>
+            <p class="text-muted">Legal limit under Motor Vehicles Act, 1988</p>
+            <h3 class="fw-bold">0</h3>
+            <p class="text-muted">Digital enforcement tools available in India — until now</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

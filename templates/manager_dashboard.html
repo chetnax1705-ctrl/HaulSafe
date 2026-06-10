@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+
+{% block title %}Manager Dashboard - HaulSafe{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">Welcome, {{ session['user_name'] }}</h2>
+    <a href="/manager/new_trip" class="btn btn-dark">+ Plan New Trip</a>
+</div>
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-success">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<h5 class="mb-3">Your Trips</h5>
+
+{% if trips %}
+    <div class="row">
+        {% for trip in trips %}
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="fw-bold">{{ trip['origin'] }} → {{ trip['destination'] }}</h6>
+                        <span class="badge bg-secondary">{{ trip['status'] }}</span>
+                    </div>
+                    <p class="text-muted mb-1">Cargo: {{ trip['cargo_type'] }}</p>
+                    <p class="text-muted mb-2">
+                        {% if trip['cargo_fragile'] %}⚠️ Fragile&nbsp;&nbsp;{% endif %}
+                        {% if trip['cargo_temp_sensitive'] %}🌡️ Temperature Sensitive{% endif %}
+                    </p>
+                    <a href="/manager/trip/{{ trip['id'] }}" class="btn btn-sm btn-outline-dark">View Details</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5 text-muted">
+        <p>No trips planned yet.</p>
+        <a href="/manager/new_trip" class="btn btn-dark">Plan your first trip</a>
+    </div>
+{% endif %}
+{% endblock %}
