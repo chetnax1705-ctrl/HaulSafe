@@ -6,6 +6,7 @@ from auth import auth
 import os
 import requests
 from manager import manager
+from driver import driver_bp
 
 load_dotenv()
 
@@ -15,6 +16,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 app.register_blueprint(auth)
 app.register_blueprint(manager)
+app.register_blueprint(driver_bp)
 
 init_db()
 

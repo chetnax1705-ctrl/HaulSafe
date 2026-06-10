@@ -90,3 +90,74 @@ def trip_detail(trip_id):
                            geometry=geometry,
                            origin_coords=origin_coords,
                            dest_coords=dest_coords)
+
+@manager.route('/manager/trip/<int:trip_id>/assign', methods=['GET', 'POST'])
+@manager_required
+def assign_driver(trip_id):
+    db = get_db()
+    trip = db.execute('SELECT * FROM trips WHERE id = ? AND manager_id = ?',
+                      (trip_id, session['user_id'])).fetchone()
+    if not trip:
+        flash('Trip not found.')
+        db.close()
+        return redirect('/manager')
+
+    if request.method == 'POST':
+        driver_email = request.form.get('driver_email', '').strip().lower()
+        driver = db.execute(
+            'SELECT * FROM users WHERE LOWER(email) = ? AND role = "driver"',
+            (driver_email,)
+        ).fetchone()
+        if not driver:
+            flash('No driver found with that email.')
+            drivers = db.execute('SELECT id, name, email FROM users WHERE role = "driver"').fetchall()
+            db.close()
+            return render_template('assign_driver.html', trip=trip, drivers=drivers)
+
+        db.execute('UPDATE trips SET driver_id = ?, status = "Assigned" WHERE id = ?',
+                   (driver['id'], trip_id))
+        db.commit()
+        db.close()
+        flash(f'Driver {driver["name"]} assigned successfully!')
+        return redirect(f'/manager/trip/{trip_id}')
+
+    drivers = db.execute('SELECT id, name, email FROM users WHERE role = "driver"').fetchall()
+    db.close()
+    return render_template('assign_driver.html', trip=trip, drivers=drivers)
+
+@manager.route('/manager/trip/<int:trip_id>/track')
+@manager_required
+def track_trip(trip_id):
+    db = get_db()
+    trip = db.execute('SELECT * FROM trips WHERE id = ? AND manager_id = ?',
+                      (trip_id, session['user_id'])).fetchone()
+    db.close()
+    if not trip:
+        flash('Trip not found.')
+        return redirect('/manager')
+    return render_template('track_trip.html', trip=trip)
+
+@manager.route('/manager/trip/<int:trip_id>/chat', methods=['POST'])
+@manager_required
+def ai_chat(trip_id):
+    from google import genai
+    import os
+
+    db = get_db()
+    trip = db.execute('SELECT * FROM trips WHERE id = ?', (trip_id,)).fetchone()
+    db.close()
+
+    user_message = request.get_json().get('message', '')
+
+    context = f"""You are HaulSafe AI, an assistant for Indian truck logistics compliance.
+Current trip: {trip['origin']} to {trip['destination']}, cargo: {trip['cargo_type']}.
+Indian law limits: max 5hr continuous driving, 30min mandatory break, max 8hr/day, 48hr/week, 8hr sleep between shifts (MV Act 1988 + Motor Transport Workers Act 1961).
+Answer questions about this trip, fatigue rules, route planning, or compliance."""
+
+    client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
+    response = client.models.generate_content(
+        model='gemini-2.0-flash',
+        contents=f"{context}\n\nUser: {user_message}"
+    )
+
+    return jsonify({'reply': response.text})

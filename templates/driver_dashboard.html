@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+
+{% block title %}Driver Dashboard - HaulSafe{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2 class="fw-bold">Welcome, {{ session['user_name'] }}</h2>
+    <p class="text-muted">Your assigned trips are listed below.</p>
+</div>
+
+{% if trips %}
+    <div class="row">
+        {% for trip in trips %}
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="fw-bold">{{ trip['origin'] }} → {{ trip['destination'] }}</h6>
+                        <span class="badge bg-secondary">{{ trip['status'] }}</span>
+                    </div>
+                    <p class="text-muted mb-2">Cargo: {{ trip['cargo_type'] }}</p>
+                    <a href="/driver/trip/{{ trip['id'] }}" class="btn btn-sm btn-dark">Start Navigation</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5 text-muted">
+        <p>No trips assigned to you yet.</p>
+        <p>Your logistics manager will assign a trip to you.</p>
+    </div>
+{% endif %}
+{% endblock %}

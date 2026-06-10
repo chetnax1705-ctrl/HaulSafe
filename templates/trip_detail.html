@@ -7,6 +7,18 @@
     <h2 class="fw-bold">{{ trip['origin'] }} → {{ trip['destination'] }}</h2>
     <a href="/manager" class="btn btn-outline-dark">← Back</a>
 </div>
+<div class="d-flex gap-2 mt-3 mb-4">
+  {% if not trip.driver_id %}
+    <a href="/manager/trip/{{ trip.id }}/assign" class="btn btn-warning">
+      👤 Assign Driver
+    </a>
+  {% else %}
+    <span class="badge bg-success fs-6 py-2 px-3">✓ Driver Assigned</span>
+    <a href="/manager/trip/{{ trip.id }}/track" class="btn btn-dark">
+      📡 Live Track
+    </a>
+  {% endif %}
+</div>
 
 <!-- Trip Summary -->
 <div class="row mb-4">
@@ -120,5 +132,42 @@
         .bindPopup("{{ trip['origin'] }}").openPopup();
     L.marker([destCoords[1], destCoords[0]]).addTo(map)
         .bindPopup("{{ trip['destination'] }}");
+</script>
+<div class="card mt-4 p-4">
+  <h5 class="mb-3">🤖 HaulSafe AI Assistant</h5>
+  <div id="chat-messages" style="height:220px;overflow-y:auto;background:#f8f9fa;border-radius:8px;padding:12px;margin-bottom:12px;">
+    <div class="text-muted small">Ask me about this trip, compliance rules, or route planning...</div>
+  </div>
+  <div class="d-flex gap-2">
+    <input type="text" id="chat-input" class="form-control" placeholder="e.g. How many rest stops does this trip need?">
+    <button class="btn btn-dark" onclick="sendChat()">Send</button>
+  </div>
+</div>
+
+<script>
+function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  const box = document.getElementById('chat-messages');
+  box.innerHTML += `<div class="mb-2"><strong>You:</strong> ${msg}</div>`;
+  input.value = '';
+
+  fetch('/manager/trip/{{ trip.id }}/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: msg })
+  })
+  .then(r => r.json())
+  .then(data => {
+    box.innerHTML += `<div class="mb-2"><span style="color:#1a6b3c">🤖 HaulSafe AI:</span> ${data.reply}</div>`;
+    box.scrollTop = box.scrollHeight;
+  });
+}
+
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendChat();
+});
 </script>
 {% endblock %}

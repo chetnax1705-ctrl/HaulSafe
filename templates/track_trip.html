@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="mb-0">Live Tracking</h2>
+      <p class="text-muted mb-0">{{ trip.origin }} → {{ trip.destination }}</p>
+    </div>
+    <a href="/manager/trip/{{ trip.id }}" class="btn btn-outline-secondary">← Back</a>
+  </div>
+
+  <div class="card mb-3 p-3 d-flex flex-row align-items-center gap-3">
+    <span id="status-dot" style="width:12px;height:12px;border-radius:50%;background:#ccc;display:inline-block;"></span>
+    <span id="status-text" class="text-muted">Waiting for driver location...</span>
+  </div>
+
+  <div id="map" style="height: 500px; border-radius: 12px;"></div>
+</div>
+
+<script>
+  const map = L.map('map').setView([20.5937, 78.9629], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  const truckIcon = L.divIcon({
+    html: '🚛',
+    className: '',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+  });
+
+  let truckMarker = null;
+
+  const socket = io();
+
+  socket.on('location_update', function(data) {
+    if (data.trip_id != {{ trip.id }}) return;
+
+    const latlng = [data.lat, data.lng];
+
+    if (!truckMarker) {
+      truckMarker = L.marker(latlng, { icon: truckIcon }).addTo(map);
+    } else {
+      truckMarker.setLatLng(latlng);
+    }
+
+    map.panTo(latlng);
+
+    document.getElementById('status-dot').style.background = '#22c55e';
+    document.getElementById('status-text').textContent =
+      `Live — Last update: ${new Date().toLocaleTimeString()}`;
+  });
+</script>
+{% endblock %}
+

@@ -1,0 +1,134 @@
+{% extends "layout.html" %}
+
+{% block title %}Active Trip - HaulSafe{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="fw-bold">{{ trip['origin'] }} → {{ trip['destination'] }}</h4>
+    <span class="badge bg-success">Active</span>
+</div>
+
+<!-- Map -->
+<div class="card shadow-sm mb-3">
+    <div class="card-body p-0">
+        <div id="map" style="height: 350px; border-radius: 8px;"></div>
+    </div>
+</div>
+
+<!-- Current Status Alert -->
+<div id="status-alert" class="alert alert-success mb-3">
+    🚛 You are good to drive. Stay safe.
+</div>
+
+<!-- Next Event -->
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <h6 class="fw-bold">📋 Your Schedule</h6>
+        <div class="mt-2">
+            {% for event in schedule %}
+            <div class="d-flex align-items-center mb-2 p-2 rounded
+                {% if event['type'] == 'break' %} bg-warning bg-opacity-25
+                {% elif event['type'] == 'sleep' %} bg-primary bg-opacity-10
+                {% elif event['type'] == 'arrival' %} bg-success bg-opacity-10
+                {% endif %}">
+                <div class="me-3" style="min-width: 75px;">
+                    <small class="text-muted">{{ event['start'] }}</small>
+                </div>
+                <div class="me-2">
+                    {% if event['type'] == 'drive' %}🚛
+                    {% elif event['type'] == 'break' %}⏸
+                    {% elif event['type'] == 'sleep' %}😴
+                    {% elif event['type'] == 'arrival' %}✅
+                    {% endif %}
+                </div>
+                <small>{{ event['label'] }}</small>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Quick Access Buttons -->
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <h6 class="fw-bold mb-3">Quick Find</h6>
+        <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-outline-dark btn-sm" onclick="findNearby('fuel')">⛽ Fuel Station</button>
+            <button class="btn btn-outline-dark btn-sm" onclick="findNearby('restaurant')">🍽️ Dhaba / Food</button>
+            <button class="btn btn-outline-dark btn-sm" onclick="findNearby('lodging')">🛏️ Rest Stop</button>
+            <button class="btn btn-outline-dark btn-sm" onclick="findNearby('toilet')">🚻 Washroom</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function decodePolyline(encoded) {
+        let points = [];
+        let index = 0, lat = 0, lng = 0;
+        while (index < encoded.length) {
+            let shift = 0, result = 0, b;
+            do { b = encoded.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+            lat += (result & 1) ? ~(result >> 1) : (result >> 1);
+            shift = result = 0;
+            do { b = encoded.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+            lng += (result & 1) ? ~(result >> 1) : (result >> 1);
+            points.push([lat / 1e5, lng / 1e5]);
+        }
+        return points;
+    }
+
+    const geometry = {{ geometry | tojson }};
+    const originCoords = {{ origin_coords }};
+    const destCoords = {{ dest_coords }};
+
+    const map = L.map('map');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    const points = decodePolyline(geometry);
+    const polyline = L.polyline(points, {color: '#212529', weight: 4}).addTo(map);
+    map.fitBounds(polyline.getBounds());
+
+    L.marker([originCoords[1], originCoords[0]]).addTo(map).bindPopup("{{ trip['origin'] }}").openPopup();
+    L.marker([destCoords[1], destCoords[0]]).addTo(map).bindPopup("{{ trip['destination'] }}");
+
+    // Live location tracking
+    let driverMarker = null;
+    const tripId = {{ trip['id'] }};
+
+    function sendLocation(lat, lng) {
+        fetch('/driver/update_location', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({lat: lat, lng: lng, trip_id: tripId})
+        });
+    }
+
+    if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(function(pos) {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            if (driverMarker) {
+                driverMarker.setLatLng([lat, lng]);
+            } else {
+                driverMarker = L.marker([lat, lng], {
+                    icon: L.divIcon({className: '', html: '🚛', iconSize: [30, 30]})
+                }).addTo(map);
+            }
+            sendLocation(lat, lng);
+        }, null, {enableHighAccuracy: true, maximumAge: 10000});
+    }
+
+    function findNearby(type) {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                const url = `https://www.google.com/maps/search/${type}/@${lat},${lng},14z`;
+                window.open(url, '_blank');
+            });
+        }
+    }
+</script>
+{% endblock %}
