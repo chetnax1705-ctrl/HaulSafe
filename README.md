@@ -73,6 +73,12 @@ HaulSafe enforces the following Indian statutory limits:
 
 *Source: Motor Vehicles Act 1988 & Motor Transport Workers Act 1961*
 
+## Vision
+
+The United States, Canada, and the European Union use digital systems to monitor driver working hours and reduce fatigue-related risk.
+
+HaulSafe explores what a software-first, India-focused compliance layer could look like for the future of trucking operations.
+
 ---
 
 ## Demo Credentials
