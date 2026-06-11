@@ -6,7 +6,7 @@
 
 ## The Problem
 
-Indian truck drivers average 11.9 hours of driving per day — nearly 4 hours over the legal limit. 49% admit to driving while fatigued. The laws exist (Motor Vehicles Act 1988, Motor Transport Workers Act 1961) but enforcement infrastructure does not.
+Research by SaveLIFE Foundation found that Indian truck drivers average 11.9 hours of driving per day — nearly 4 hours over the legal limit. 49% admit to driving while fatigued. The laws exist (Motor Vehicles Act 1988, Motor Transport Workers Act 1961) but enforcement infrastructure does not.
 
 The result: driver fatigue is one of the leading causes of highway accidents in India. Fleet owners face no accountability. Drivers have no protection.
 
