@@ -1,6 +1,6 @@
 🚛 HaulSafe
 
-India's first software-layer compliance platform for truck fleet management — enforcing driver rest limits that exist in law but never in practice.
+ A software-layer compliance platform for truck fleet management — enforcing driver rest limits that exist in law but never in practice.
 
 
 The Problem
