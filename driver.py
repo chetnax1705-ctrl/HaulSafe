@@ -86,3 +86,19 @@ def log_violation():
     db.commit()
     db.close()
     return jsonify({'status': 'logged'})
+
+@driver_bp.route('/driver/heartbeat', methods=['POST'])
+@driver_required
+def heartbeat():
+    data = request.get_json()
+    trip_id = data.get('trip_id')
+    event = data.get('event', 'heartbeat')  # heartbeat | tab_hidden | tab_visible | session_start
+    
+    db = get_db()
+    db.execute(
+        'INSERT INTO compliance_logs (trip_id, driver_id, event_type, note) VALUES (?, ?, ?, ?)',
+        (trip_id, session['user_id'], event, f'Auto-logged: {event}')
+    )
+    db.commit()
+    db.close()
+    return jsonify({'status': 'ok'})

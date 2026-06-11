@@ -67,7 +67,6 @@
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <h5 class="fw-bold mb-3">🕐 Compliance Schedule</h5>
-        <p class="text-muted small">Generated per Motor Vehicles Act 1988 & Motor Transport Workers Act 1961</p>
         <div class="timeline">
             {% for event in schedule %}
             <div class="d-flex align-items-start mb-3">
@@ -133,8 +132,49 @@
     L.marker([destCoords[1], destCoords[0]]).addTo(map)
         .bindPopup("{{ trip['destination'] }}");
 </script>
+
 <div class="card mt-4 p-4">
-  <h5 class="mb-3">🤖 HaulSafe AI Assistant</h5>
+  <h5 class="mb-3">📋 Compliance Audit Log</h5>
+  {% set logs = compliance_logs %}
+  {% if logs %}
+    <div style="max-height:220px; overflow-y:auto;">
+      <table class="table table-sm table-borderless mb-0" style="font-size:0.85rem;">
+        <thead>
+          <tr class="text-muted" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em;">
+            <th>Time</th>
+            <th>Event</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td style="white-space:nowrap; color:#6b7280;">{{ log.timestamp }}</td>
+            <td>
+              {% if log.event_type == 'break_overdue' %}
+                <span style="color:#dc2626; font-weight:600;">⚠️ Break Overdue</span>
+              {% elif log.event_type == 'session_interrupted' %}
+                <span style="color:#d97706; font-weight:600;">📴 Session Interrupted</span>
+              {% elif log.event_type == 'tab_hidden' %}
+                <span style="color:#6b7280;">👁️ App Hidden</span>
+              {% elif log.event_type == 'session_start' %}
+                <span style="color:#16a34a;">✅ Session Started</span>
+              {% else %}
+                <span style="color:#6b7280;">{{ log.event_type }}</span>
+              {% endif %}
+            </td>
+            <td style="color:#6b7280;">{{ log.note or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-muted mb-0" style="font-size:0.875rem;">No compliance events logged yet for this trip.</p>
+  {% endif %}
+</div>
+<div class="card mt-4 p-4">
+  <h5 class="mb-3">🤖 HaulSafe Assistant</h5>
   <div id="chat-messages" style="height:220px;overflow-y:auto;background:#f8f9fa;border-radius:8px;padding:12px;margin-bottom:12px;">
     <div class="text-muted small">Ask me about this trip, compliance rules, or route planning...</div>
   </div>

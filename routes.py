@@ -85,7 +85,7 @@ def calculate_fatigue_schedule(total_drive_minutes, departure_time=None):
                     "type": "break",
                     "start": current_time.strftime("%I:%M %p"),
                     "duration_minutes": MANDATORY_BREAK,
-                    "label": "Mandatory 30-min break (MV Act compliance)",
+                    "label": "Mandatory 30-min break",
                     "day": day
                 })
                 current_time += timedelta(minutes=MANDATORY_BREAK)
@@ -111,7 +111,7 @@ def calculate_fatigue_schedule(total_drive_minutes, departure_time=None):
                 "type": "break",
                 "start": current_time.strftime("%I:%M %p"),
                 "duration_minutes": MANDATORY_BREAK,
-                "label": "Mandatory 30-min break (MV Act compliance)",
+                "label": "Mandatory 30-min break",
                 "day": day
             })
             current_time += timedelta(minutes=MANDATORY_BREAK)

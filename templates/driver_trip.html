@@ -53,13 +53,81 @@
     <div class="card-body">
         <h6 class="fw-bold mb-3">Quick Find</h6>
         <div class="d-flex gap-2 flex-wrap">
-            <button class="btn btn-outline-dark btn-sm" onclick="findNearby('fuel')">⛽ Fuel Station</button>
-            <button class="btn btn-outline-dark btn-sm" onclick="findNearby('restaurant')">🍽️ Dhaba / Food</button>
-            <button class="btn btn-outline-dark btn-sm" onclick="findNearby('lodging')">🛏️ Rest Stop</button>
-            <button class="btn btn-outline-dark btn-sm" onclick="findNearby('toilet')">🚻 Washroom</button>
+            <button class="btn btn-outline-dark btn-sm" onclick="findNearby('fuel', this)">⛽ Fuel Station</button>
+            <button class="btn btn-outline-dark btn-sm" onclick="findNearby('restaurant', this)">🍽️ Dhaba / Food</button>
+            <button class="btn btn-outline-dark btn-sm" onclick="findNearby('lodging', this)">🛏️ Rest Stop</button>
+            <button class="btn btn-outline-dark btn-sm" onclick="findNearby('toilet', this)">🚻 Washroom</button>
         </div>
     </div>
 </div>
+<!-- Break Overdue Banner (hidden by default) -->
+<div id="break-banner" style="display:none; position:fixed; top:70px; left:0; right:0; z-index:9999;
+     background:#dc2626; color:#fff; text-align:center; padding:14px 20px; font-weight:600;
+     font-size:0.95rem; box-shadow:0 4px 12px rgba(0,0,0,0.2);">
+  ⚠️ MANDATORY BREAK REQUIRED — Continuous driving limit reached (5 hours). Pull over immediately.
+</div>
+
+<script>
+const TRIP_ID = {{ trip.id }};
+const MAX_CONTINUOUS_DRIVE_MS = 5 * 60 * 60 * 1000; // 5 hours
+const HEARTBEAT_INTERVAL_MS = 60 * 1000; // every 60 seconds
+
+// --- Session Start ---
+logEvent('session_start');
+
+// --- Drive Timer ---
+const driveStartTime = Date.now();
+
+function checkDriveTimer() {
+  const elapsed = Date.now() - driveStartTime;
+  const banner = document.getElementById('break-banner');
+  
+  if (elapsed >= MAX_CONTINUOUS_DRIVE_MS) {
+    banner.style.display = 'block';
+    logEvent('break_overdue');
+  } else if (elapsed >= 4.5 * 60 * 60 * 1000) {
+    // Warn 30 minutes before
+    banner.style.background = '#d97706';
+    banner.innerHTML = '⏰ Break due in 30 minutes — Plan to stop soon.';
+    banner.style.display = 'block';
+  }
+}
+
+// Check every minute
+setInterval(checkDriveTimer, 60 * 1000);
+
+// --- Heartbeat ---
+setInterval(() => {
+  logEvent('heartbeat');
+}, HEARTBEAT_INTERVAL_MS);
+
+// --- Tab/App Visibility Detection ---
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    logEvent('tab_hidden');
+  } else {
+    logEvent('tab_visible');
+  }
+});
+
+// --- Page unload (app closed/refreshed) ---
+window.addEventListener('beforeunload', () => {
+  // Use sendBeacon so it fires even when page is closing
+  const payload = JSON.stringify({ trip_id: TRIP_ID, event: 'session_interrupted' });
+  navigator.sendBeacon('/driver/heartbeat', new Blob([payload], { type: 'application/json' }));
+});
+
+// --- Log function ---
+function logEvent(eventType) {
+  fetch('/driver/heartbeat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ trip_id: TRIP_ID, event: eventType })
+  }).catch(() => {
+    // Silently fail — don't disrupt driver UI
+  });
+}
+</script>
 {% endblock %}
 
 {% block scripts %}
@@ -120,15 +188,28 @@
         }, null, {enableHighAccuracy: true, maximumAge: 10000});
     }
 
-    function findNearby(type) {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function(pos) {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-                const url = `https://www.google.com/maps/search/${type}/@${lat},${lng},14z`;
-                window.open(url, '_blank');
-            });
-        }
+    function findNearby(type, btn) {
+    const original = btn.innerHTML;
+    btn.innerHTML = '⏳ Locating...';
+    btn.disabled = true;
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const url = `https://www.google.com/maps/search/${type}/@${lat},${lng},14z`;
+            window.open(url, '_blank');
+            btn.innerHTML = original;
+            btn.disabled = false;
+        }, function(err) {
+            btn.innerHTML = '❌ Enable GPS';
+            setTimeout(() => { btn.innerHTML = original; btn.disabled = false; }, 2000);
+        }, {enableHighAccuracy: true, timeout: 8000});
+    } else {
+        btn.innerHTML = original;
+        btn.disabled = false;
+        alert('Geolocation not supported on this device.');
     }
+}
 </script>
 {% endblock %}
